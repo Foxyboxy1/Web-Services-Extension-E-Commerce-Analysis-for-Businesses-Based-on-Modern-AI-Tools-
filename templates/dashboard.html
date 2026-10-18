@@ -1,0 +1,446 @@
+{% from "macros.html" import icon %}
+{% set other_lang = 'ar' if lang == 'en' else 'en' %}
+{% set kpis = data.kpis %}
+{% set deltas = kpis.deltas %}
+
+{% macro delta_badge(value, unit) -%}
+    {%- if value is not none -%}
+        {%- set state = 'delta--up' if value > 0 else ('delta--down' if value < 0 else 'delta--flat') -%}
+        {%- set arrow = 'arrow-up' if value > 0 else ('arrow-down' if value < 0 else 'minus') -%}
+        <span class="delta {{ state }}">{{ icon(arrow, 'icon icon-sm') }}{{ '%+.1f%s'|format(value, unit) }}</span>
+    {%- endif -%}
+{%- endmacro %}
+
+{% macro kpi_card(label, value, icon_name, tone, delta_value, unit) %}
+    <article class="kpi">
+        <div class="kpi__head">
+            <span class="kpi__label">{{ label }}</span>
+            <span class="kpi__icon kpi__icon--{{ tone }}">{{ icon(icon_name) }}</span>
+        </div>
+        <p class="kpi__value">{{ value }}</p>
+        <div class="kpi__foot">
+            {{ delta_badge(delta_value, unit) }}
+            <span>{{ t.kpi_vs_previous if delta_value is not none else t.kpi_previous_hint }}</span>
+        </div>
+    </article>
+{% endmacro %}
+
+<!DOCTYPE html>
+<html lang="{{ lang }}" dir="{{ direction }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ t.app_name }} | {{ t.page_title }}</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%232563eb'/><path d='M16 8a8 8 0 1 0 8 8h-8z' fill='%23fff'/><path d='M17 7v8h8a8 8 0 0 0-8-8z' fill='%2360a5fa'/></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="app-body">
+
+    <a class="skip-link" href="#main-content">{{ t.skip_to_content }}</a>
+
+    <div class="app">
+
+        <!-- ============================ SIDEBAR ============================ -->
+        <aside class="sidebar" id="sidebar" aria-label="{{ t.nav_section_main }}">
+            <div>
+                <div class="sidebar__brand">
+                    <span class="brand-mark">{{ icon('logo') }}</span>
+                    <span class="brand-text">
+                        <span class="brand-text__name">{{ t.app_name }}</span>
+                        <span class="brand-text__version">{{ t.app_version }}</span>
+                    </span>
+                </div>
+
+                <nav class="sidebar__nav">
+                    <p class="nav-section">{{ t.nav_section_main }}</p>
+                    <ul class="nav-list">
+                        <li>
+                            <a class="nav-link is-active" href="#overview" data-nav>
+                                {{ icon('overview') }}<span>{{ t.nav_overview }}</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a class="nav-link" href="#trend" data-nav>
+                                {{ icon('sales') }}<span>{{ t.nav_sales }}</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a class="nav-link" href="#products" data-nav>
+                                {{ icon('products') }}<span>{{ t.nav_products }}</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a class="nav-link" href="#regions" data-nav>
+                                {{ icon('chart-bar') }}<span>{{ t.filter_region }}</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a class="nav-link" href="{{ url_for('export_products', **request.args) }}">
+                                {{ icon('reports') }}<span>{{ t.nav_reports }}</span>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+
+            <div class="sidebar__footer">
+                <div class="user-card">
+                    <span class="user-card__avatar">{{ (session.get('email') or 'SA')[:2] | upper }}</span>
+                    <span class="user-card__meta">
+                        <span class="user-card__name">{{ t.account_name }}</span>
+                        <span class="user-card__role">{{ t.account_role }}</span>
+                    </span>
+                    <a class="btn btn-icon btn-danger-ghost"
+                       href="{{ url_for('logout') }}"
+                       title="{{ t.logout }}"
+                       aria-label="{{ t.logout }}">
+                        {{ icon('logout', 'icon icon-sm') }}
+                    </a>
+                </div>
+            </div>
+        </aside>
+
+        <button class="sidebar-scrim" id="sidebar-scrim" type="button" tabindex="-1"
+                aria-hidden="true" aria-label="{{ t.nav_section_main }}"></button>
+
+        <!-- ============================ CONTENT ============================ -->
+        <div class="content">
+
+            <header class="topbar">
+                <div style="display:flex; align-items:center; gap:12px; min-width:0;">
+                    <button class="btn btn-icon sidebar-toggle" id="sidebar-toggle" type="button"
+                            aria-controls="sidebar" aria-expanded="false" aria-label="{{ t.nav_section_main }}">
+                        {{ icon('menu', 'icon icon-sm') }}
+                    </button>
+                    <div class="topbar__title">
+                        <h1>{{ t.page_title }}</h1>
+                        <nav class="breadcrumb" aria-label="breadcrumb">
+                            <span>{{ t.breadcrumb_root }}</span>
+                            {{ icon('chevron-right', 'icon icon-sm') }}
+                            <span class="breadcrumb__current">{{ t.breadcrumb_current }}</span>
+                        </nav>
+                    </div>
+                </div>
+
+                <div class="topbar__actions">
+                    <form class="search-form" method="GET" action="{{ url_for('dashboard') }}" role="search">
+                        {{ icon('search', 'icon icon-sm') }}
+                        <input class="input" type="search" name="search"
+                               value="{{ filters.search }}"
+                               placeholder="{{ t.search_placeholder }}"
+                               aria-label="{{ t.filter_search }}">
+                        {% if filters.start_date %}<input type="hidden" name="start_date" value="{{ filters.start_date.isoformat() }}">{% endif %}
+                        {% if filters.end_date %}<input type="hidden" name="end_date" value="{{ filters.end_date.isoformat() }}">{% endif %}
+                        {% if filters.region %}<input type="hidden" name="region" value="{{ filters.region }}">{% endif %}
+                        {% if filters.category %}<input type="hidden" name="category" value="{{ filters.category }}">{% endif %}
+                        {% if filters.segment %}<input type="hidden" name="segment" value="{{ filters.segment }}">{% endif %}
+                    </form>
+
+                    <button class="btn btn-icon" type="button" id="notifications-button"
+                            title="{{ t.notifications }}" aria-label="{{ t.notifications }}"
+                            data-toast-title="{{ t.toast_notifications_title }}"
+                            data-toast-desc="{{ t.toast_notifications_desc | replace('{count}', data.row_count | string) }}">
+                        {{ icon('bell', 'icon icon-sm') }}
+                    </button>
+
+                    <a class="lang-switch"
+                       href="{{ url_for('set_language_route', language=other_lang, next=request.full_path) }}"
+                       title="{{ t.language_switch_title }}"
+                       hreflang="{{ other_lang }}">
+                        <span class="lang-switch__flag">{{ languages[other_lang].short }}</span>
+                        <span>{{ t.language_switch }}</span>
+                    </a>
+                </div>
+            </header>
+
+            <main class="main" id="main-content">
+
+                <!-- ---------------------- Page heading ---------------------- -->
+                <section class="page-head" id="overview">
+                    <div>
+                        <h2 class="page-head__title">{{ t.dashboard_heading }}</h2>
+                        <p class="page-head__subtitle">{{ t.dashboard_subheading }}</p>
+                    </div>
+                    <div class="page-head__actions">
+                        <a class="btn btn-outline" href="#filters">
+                            {{ icon('filter', 'icon icon-sm') }}
+                            <span>{{ t.filter_metrics }}</span>
+                        </a>
+                        <a class="btn btn-primary" href="{{ url_for('export_products', **request.args) }}"
+                           data-export
+                           data-toast-title="{{ t.toast_export_title }}"
+                           data-toast-desc="{{ t.toast_export_desc }}">
+                            {{ icon('download', 'icon icon-sm') }}
+                            <span>{{ t.export_report }}</span>
+                        </a>
+                    </div>
+                </section>
+
+                <!-- ------------------------- Filters ------------------------ -->
+                <section class="filters" id="filters" aria-labelledby="filters-title">
+                    <div class="filters__head">
+                        <p class="filters__title" id="filters-title">
+                            {{ icon('filter', 'icon icon-sm') }}
+                            <span>{{ t.filters_heading }}</span>
+                        </p>
+                        <p class="filters__title" style="font-weight:600; color:var(--muted);">
+                            {{ icon('database', 'icon icon-sm') }}
+                            <span>{{ t.dataset_range }}: {{ bounds.min.isoformat() }} — {{ bounds.max.isoformat() }}</span>
+                        </p>
+                    </div>
+
+                    <form method="GET" action="{{ url_for('dashboard') }}" class="filters__form">
+                        <div class="filters__grid">
+                            <div class="field">
+                                <label class="field-label" for="f-start">{{ t.filter_start_date }}</label>
+                                <input class="input" type="date" id="f-start" name="start_date"
+                                       value="{{ filters.start_date.isoformat() if filters.start_date else '' }}"
+                                       min="{{ bounds.min.isoformat() }}" max="{{ bounds.max.isoformat() }}">
+                            </div>
+                            <div class="field">
+                                <label class="field-label" for="f-end">{{ t.filter_end_date }}</label>
+                                <input class="input" type="date" id="f-end" name="end_date"
+                                       value="{{ filters.end_date.isoformat() if filters.end_date else '' }}"
+                                       min="{{ bounds.min.isoformat() }}" max="{{ bounds.max.isoformat() }}">
+                            </div>
+                            <div class="field">
+                                <label class="field-label" for="f-region">{{ t.filter_region }}</label>
+                                <select class="select" id="f-region" name="region">
+                                    <option value="">{{ t.option_all }}</option>
+                                    {% for region in options.region %}
+                                    <option value="{{ region }}" {{ 'selected' if filters.region == region else '' }}>{{ translation_region(region) }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="field">
+                                <label class="field-label" for="f-category">{{ t.filter_category }}</label>
+                                <select class="select" id="f-category" name="category">
+                                    <option value="">{{ t.option_all }}</option>
+                                    {% for category in options.category %}
+                                    <option value="{{ category }}" {{ 'selected' if filters.category == category else '' }}>{{ translation_category(category) }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="field">
+                                <label class="field-label" for="f-segment">{{ t.filter_segment }}</label>
+                                <select class="select" id="f-segment" name="segment">
+                                    <option value="">{{ t.option_all }}</option>
+                                    {% for segment in options.segment %}
+                                    <option value="{{ segment }}" {{ 'selected' if filters.segment == segment else '' }}>{{ translation_segment(segment) }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="field">
+                                <label class="field-label" for="f-search">{{ t.filter_search }}</label>
+                                <input class="input" type="search" id="f-search" name="search"
+                                       value="{{ filters.search }}"
+                                       placeholder="{{ t.search_placeholder }}">
+                            </div>
+                        </div>
+
+                        <div class="filters__actions" style="margin-block-start:16px;">
+                            <button class="btn btn-primary" type="submit">
+                                {{ icon('check', 'icon icon-sm') }}
+                                <span>{{ t.apply_filters }}</span>
+                            </button>
+                            <a class="btn btn-outline" href="{{ url_for('dashboard') }}" id="reset-filters"
+                               data-toast-title="{{ t.toast_reset_title }}"
+                               data-toast-desc="{{ t.toast_reset_desc }}">
+                                {{ icon('reset', 'icon icon-sm') }}
+                                <span>{{ t.reset_filters }}</span>
+                            </a>
+                        </div>
+                    </form>
+
+                    {% if active_filters %}
+                    <div class="chips">
+                        <span class="chips__label">{{ t.active_filters }}</span>
+                        {% for item in active_filters %}
+                        <span class="chip"><span class="chip__key">{{ item.label }}:</span>{{ item.value }}</span>
+                        {% endfor %}
+                        <span class="chip">{{ t.results_count | replace('{count}', data.row_count | string) }}</span>
+                    </div>
+                    {% endif %}
+                </section>
+
+                <!-- --------------------------- KPIs -------------------------- -->
+                <section class="kpi-grid" aria-label="{{ t.dashboard_heading }}">
+                    {{ kpi_card(t.kpi_total_sales, kpis.total_sales | currency, 'credit-card', 'primary', deltas.total_sales if deltas else none, '%') }}
+                    {{ kpi_card(t.kpi_total_profit, kpis.total_profit | currency, 'chart-line', 'success', deltas.total_profit if deltas else none, '%') }}
+                    {{ kpi_card(t.kpi_total_orders, kpis.total_orders | number, 'cart', 'accent', deltas.total_orders if deltas else none, '%') }}
+                    {{ kpi_card(t.kpi_profit_margin, kpis.profit_margin | percent, 'percent', 'navy', deltas.profit_margin if deltas else none, t.unit_pp) }}
+                </section>
+
+                <!-- -------------------------- Charts ------------------------- -->
+                <section class="grid-2-1" id="trend">
+                    <article class="card">
+                        <div class="card__head">
+                            <h3 class="card__title">{{ t.chart_trend_title }}</h3>
+                            <div class="legend">
+                                <span class="legend__item"><span class="legend__dot" style="background:#2563eb"></span>{{ t.series_sales }}</span>
+                                <span class="legend__item"><span class="legend__dot" style="background:#60a5fa"></span>{{ t.series_profit }}</span>
+                            </div>
+                        </div>
+                        <div class="card__body">
+                            <div class="chart-box chart-box--tall">
+                                <canvas id="trend-chart" aria-label="{{ t.chart_trend_title }}" role="img"></canvas>
+                                <p class="chart-empty" data-chart-empty="{{ t.chart_empty }}" hidden>{{ t.chart_empty }}</p>
+                            </div>
+                        </div>
+                    </article>
+
+                    <article class="card">
+                        <div class="card__head">
+                            <h3 class="card__title">{{ t.chart_category_title }}</h3>
+                        </div>
+                        <div class="card__body">
+                            <div class="chart-box chart-box--donut">
+                                <canvas id="category-chart" aria-label="{{ t.chart_category_title }}" role="img"></canvas>
+                                <p class="chart-empty" data-chart-empty="{{ t.chart_empty }}" hidden>{{ t.chart_empty }}</p>
+                            </div>
+                            <div class="share-strip">
+                                {% for item in data.categories %}
+                                <div>
+                                    <span class="share-strip__label">{{ translation_category(item.key) }}</span>
+                                    <span class="share-strip__value">{{ item.share | percent }}</span>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </article>
+                </section>
+
+                <section class="grid-2" id="regions">
+                    <article class="card">
+                        <div class="card__head">
+                            <h3 class="card__title">{{ t.chart_region_title }}</h3>
+                        </div>
+                        <div class="card__body">
+                            <div class="chart-box chart-box--medium">
+                                <canvas id="region-chart" aria-label="{{ t.chart_region_title }}" role="img"></canvas>
+                                <p class="chart-empty" data-chart-empty="{{ t.chart_empty }}" hidden>{{ t.chart_empty }}</p>
+                            </div>
+                        </div>
+                    </article>
+
+                    <article class="card">
+                        <div class="card__head">
+                            <h3 class="card__title">{{ t.chart_segment_title }}</h3>
+                            <div class="legend">
+                                <span class="legend__item"><span class="legend__dot" style="background:#2563eb"></span>{{ t.series_sales }}</span>
+                                <span class="legend__item"><span class="legend__dot" style="background:#60a5fa"></span>{{ t.series_profit }}</span>
+                            </div>
+                        </div>
+                        <div class="card__body">
+                            <div class="chart-box chart-box--medium">
+                                <canvas id="segment-chart" aria-label="{{ t.chart_segment_title }}" role="img"></canvas>
+                                <p class="chart-empty" data-chart-empty="{{ t.chart_empty }}" hidden>{{ t.chart_empty }}</p>
+                            </div>
+                        </div>
+                    </article>
+                </section>
+
+                <!-- --------------------------- Table ------------------------- -->
+                <section class="card table-card" id="products">
+                    <div class="card__head" style="padding-block-end:16px; border-block-end:1px solid var(--border);">
+                        <div>
+                            <h3 class="card__title">{{ t.table_top_products }}</h3>
+                        </div>
+                        <div class="table-tools">
+                            <label class="visually-hidden" for="table-filter">{{ t.table_filter_placeholder }}</label>
+                            <input class="input" type="search" id="table-filter"
+                                   placeholder="{{ t.table_filter_placeholder }}">
+                        </div>
+                    </div>
+
+                    {% if rows %}
+                    <div class="table-scroll">
+                        <table class="data">
+                            <thead>
+                                <tr>
+                                    <th scope="col">{{ t.col_product }}</th>
+                                    <th scope="col">{{ t.col_category }}</th>
+                                    <th scope="col">{{ t.col_units }}</th>
+                                    <th scope="col">{{ t.col_sales }}</th>
+                                    <th scope="col">{{ t.col_profit }}</th>
+                                    <th scope="col">{{ t.col_margin }}</th>
+                                    <th scope="col">{{ t.col_performance }}</th>
+                                </tr>
+                            </thead>
+                            <tbody id="product-rows">
+                                {% for row in rows %}
+                                {% set tag = 'tag--tech' if row.category == 'Technology' else ('tag--furniture' if row.category == 'Furniture' else 'tag--office') %}
+                                {% set bar = 'progress__bar--success' if row.category == 'Furniture' else ('progress__bar--accent' if row.category == 'Office Supplies' else '') %}
+                                <tr data-search="{{ (row.name ~ ' ' ~ row.category_label ~ ' ' ~ row.sub_category) | lower }}">
+                                    <td>
+                                        <span class="product-cell">
+                                            <span class="product-cell__mark">{{ row.name.split()[:2] | map('first') | join | upper }}</span>
+                                            <span>
+                                                <span class="product-cell__name" title="{{ row.name }}">{{ row.name }}</span>
+                                                <span class="product-cell__meta">{{ row.sub_category }}</span>
+                                            </span>
+                                        </span>
+                                    </td>
+                                    <td><span class="tag {{ tag }}">{{ row.category_label }}</span></td>
+                                    <td class="cell-num">{{ row.quantity | number }}</td>
+                                    <td class="cell-num">{{ row.sales | currency }}</td>
+                                    <td class="cell-num {{ 'cell-profit--negative' if row.profit < 0 else '' }}">{{ row.profit | currency }}</td>
+                                    <td class="cell-num">{{ row.margin | percent }}</td>
+                                    <td>
+                                        <span class="progress">
+                                            <span class="progress__value">{{ row.contribution | percent(0) }}</span>
+                                            <span class="progress__track">
+                                                <span class="progress__bar {{ bar }}" style="width: {{ row.contribution | round(1) }}%"></span>
+                                            </span>
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="state" id="table-empty" hidden>
+                        <span class="state__icon">{{ icon('inbox', 'icon-lg') }}</span>
+                        <p class="state__title">{{ t.empty_title }}</p>
+                        <p class="state__text">{{ t.empty_description }}</p>
+                    </div>
+                    {% else %}
+                    <div class="state">
+                        <span class="state__icon">{{ icon('inbox', 'icon-lg') }}</span>
+                        <p class="state__title">{{ t.empty_title }}</p>
+                        <p class="state__text">{{ t.empty_description }}</p>
+                    </div>
+                    {% endif %}
+                </section>
+
+            </main>
+
+            <p class="page-footer">{{ t.footer_note }} &middot; {{ current_year }}</p>
+        </div>
+    </div>
+
+    <!-- Toast notification -->
+    <div class="toast" id="toast" role="status" aria-live="polite">
+        <span class="toast__icon">{{ icon('check') }}</span>
+        <span>
+            <span class="toast__title" id="toast-title"></span>
+            <span class="toast__desc" id="toast-desc"></span>
+        </span>
+    </div>
+
+    <script id="dashboard-data" type="application/json">{{ charts | tojson }}</script>
+    <script id="dashboard-config" type="application/json">{{ {
+        "locale": languages[lang].locale,
+        "numberLocale": "en-US",
+        "currency": t.currency_symbol,
+        "empty": t.chart_empty,
+        "sales": t.series_sales,
+        "profit": t.series_profit
+    } | tojson }}</script>
+    <script src="{{ url_for('static', filename='js/vendor/chart.umd.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}" defer></script>
+</body>
+</html>

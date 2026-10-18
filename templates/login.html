@@ -1,0 +1,127 @@
+{% from "macros.html" import icon %}
+{% set other_lang = 'ar' if lang == 'en' else 'en' %}
+<!DOCTYPE html>
+<html lang="{{ lang }}" dir="{{ direction }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ t.app_name }} | {{ t.sign_in }}</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%232563eb'/><path d='M16 8a8 8 0 1 0 8 8h-8z' fill='%23fff'/><path d='M17 7v8h8a8 8 0 0 0-8-8z' fill='%2360a5fa'/></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="auth-body">
+
+    <main class="auth-card">
+
+        <!-- Brand / value proposition panel -->
+        <section class="auth-brand">
+            <div class="auth-brand__top">
+                <div class="auth-logo">
+                    <span class="auth-logo__mark">{{ icon('logo', 'icon icon-lg') }}</span>
+                    <span class="auth-logo__text">
+                        <span class="auth-logo__name">{{ t.app_name }}</span>
+                        <span class="auth-logo__version">{{ t.app_version }}</span>
+                    </span>
+                </div>
+
+                <div class="auth-brand__body">
+                    <p class="auth-eyebrow">{{ t.brand_eyebrow }}</p>
+                    <h1 class="auth-headline">{{ t.app_tagline }}</h1>
+                    <p class="auth-brand__description">{{ t.app_description }}</p>
+                </div>
+            </div>
+
+            <div class="auth-brand__bottom">
+                <p class="auth-brand__description">{{ t.footer_note }} &middot; {{ current_year }}</p>
+            </div>
+        </section>
+
+        <!-- Authentication form -->
+        <section class="auth-form">
+            <div class="auth-form__head">
+                <div>
+                    <p class="auth-eyebrow">{{ t.login_eyebrow }}</p>
+                    <h2 class="auth-form__title">{{ t.login_title }}</h2>
+                    <p class="auth-form__subtitle">{{ t.login_subtitle }}</p>
+                </div>
+                <a class="lang-switch"
+                   href="{{ url_for('set_language_route', language=other_lang, next=request.path) }}"
+                   title="{{ t.language_switch_title }}"
+                   hreflang="{{ other_lang }}">
+                    <span class="lang-switch__flag">{{ languages[other_lang].short }}</span>
+                    <span>{{ t.language_switch }}</span>
+                </a>
+            </div>
+
+            {% if error %}
+            <div class="alert alert-error" role="alert" style="margin-block-end: 18px;">
+                {{ icon('alert') }}
+                <span>{{ error }}</span>
+            </div>
+            {% endif %}
+
+            <form method="POST" action="{{ url_for('login') }}" id="login-form">
+                <div class="field">
+                    <label class="field-label" for="email">{{ t.email_label }}</label>
+                    <input class="input"
+                           id="email"
+                           name="email"
+                           type="email"
+                           inputmode="email"
+                           autocomplete="username"
+                           placeholder="{{ t.email_placeholder }}"
+                           value="{{ request.form.get('email', '') }}"
+                           required
+                           autofocus>
+                </div>
+
+                <div class="field">
+                    <label class="field-label" for="password">{{ t.password_label }}</label>
+                    <div class="password-wrap">
+                        <input class="input"
+                               id="password"
+                               name="password"
+                               type="password"
+                               autocomplete="current-password"
+                               placeholder="{{ t.password_placeholder }}"
+                               required>
+                        <button type="button"
+                                class="password-toggle"
+                                id="password-toggle"
+                                aria-controls="password"
+                                aria-pressed="false"
+                                aria-label="{{ t.show_password }}"
+                                data-label-show="{{ t.show_password }}"
+                                data-label-hide="{{ t.hide_password }}"
+                                data-icon-show="{{ icon('eye', 'icon icon-sm') | e }}"
+                                data-icon-hide="{{ icon('eye-off', 'icon icon-sm') | e }}">
+                            {{ icon('eye', 'icon icon-sm') }}
+                        </button>
+                    </div>
+                </div>
+
+                <button class="btn btn-primary btn-block" type="submit" id="login-submit"
+                        data-label-idle="{{ t.sign_in }}" data-label-busy="{{ t.signing_in }}">
+                    <span class="btn-label">{{ t.sign_in }}</span>
+                </button>
+            </form>
+
+            <div class="demo-box">
+                <strong>{{ t.demo_credentials }}</strong>
+                <dl>
+                    <dt>{{ t.email_label }}</dt>
+                    <dd>{{ demo_email }}</dd>
+                    <dt>{{ t.password_label }}</dt>
+                    <dd>{{ demo_password }}</dd>
+                </dl>
+                <p>{{ t.demo_credentials_note }}</p>
+            </div>
+        </section>
+    </main>
+
+    <script src="{{ url_for('static', filename='js/login.js') }}" defer></script>
+</body>
+</html>

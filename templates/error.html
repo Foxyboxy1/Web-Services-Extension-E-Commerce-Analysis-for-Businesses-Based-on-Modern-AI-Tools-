@@ -1,0 +1,31 @@
+{% from "macros.html" import icon %}
+<!DOCTYPE html>
+<html lang="{{ lang }}" dir="{{ direction }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ t.app_name }} | {{ error_title }}</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%232563eb'/><path d='M16 8a8 8 0 1 0 8 8h-8z' fill='%23fff'/><path d='M17 7v8h8a8 8 0 0 0-8-8z' fill='%2360a5fa'/></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+    <main class="state-page">
+        <div class="state-page__card">
+            <span class="state__icon">{{ icon('alert', 'icon-lg') }}</span>
+            {% if error_code %}<p class="state-page__code">{{ error_code }}</p>{% endif %}
+            <h1 class="state__title">{{ error_title }}</h1>
+            <p class="state__text">{{ error_message }}</p>
+            {% if session.get('logged_in') %}
+            <a class="btn btn-primary" href="{{ url_for('dashboard') }}">{{ t.breadcrumb_root }}</a>
+            {% else %}
+            <a class="btn btn-primary" href="{{ url_for('login') }}">{{ t.back_to_login }}</a>
+            {% endif %}
+        </div>
+    </main>
+
+</body>
+</html>

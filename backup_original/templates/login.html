@@ -1,0 +1,49 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MarginIQ | Sign In</title>
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <main class="login-container">
+        <section class="brand-panel">
+            <div class="logo">M</div>
+            <p class="eyebrow">STORE INTELLIGENCE</p>
+            <h1>Make every<br>margin count.</h1>
+            <p>Turn your sales data into smarter business decisions.</p>
+        </section>
+
+        <section class="form-panel">
+            <p class="eyebrow">WELCOME BACK</p>
+            <h2>Sign in to your workspace</h2>
+            <p class="subtitle">Access your sales and profitability insights.</p>
+
+            {% if error %}
+                <p class="error">{{ error }}</p>
+            {% endif %}
+
+            <form method="POST">
+                <label for="email">Email address</label>
+                <input id="email" type="email" name="email"
+                       placeholder="admin@superstore.com" required>
+
+                <label for="password">Password</label>
+                <input id="password" type="password" name="password"
+                       placeholder="Enter your password" required>
+
+                <button type="submit">Sign In →</button>
+            </form>
+
+            <div class="demo">
+                <strong>Demo credentials</strong>
+                <p>Email: admin@superstore.com</p>
+                <p>Password: Superstore123!</p>
+            </div>
+        </section>
+    </main>
+</body>
+</html>
