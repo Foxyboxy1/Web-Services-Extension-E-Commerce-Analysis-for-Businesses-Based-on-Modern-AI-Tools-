@@ -5,7 +5,6 @@ A sales & business-intelligence dashboard built with Flask + pandas, with a bili
 
 ---
 
-## 🇪🇬 بالعربي
 
 ### قبل ما تبدأ — المتطلبات
 - **Python 3.10 أو أحدث** (نزّله من python.org وعلّم على "Add Python to PATH" وقت التثبيت).
